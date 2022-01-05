@@ -1,9 +1,12 @@
 <div class="flex flex-nowrap">
-    <mat-checkbox *ngIf="checkedFormControl" class="flex-none py-2 px-3" [formControl]="checkedFormControl"></mat-checkbox>
+    <mat-checkbox *ngIf="checkedFormControl" class="flex-none py-3 px-5" [formControl]="checkedFormControl"></mat-checkbox>
 
     <div *ngFor="let weekday of weekdays"
-         class="flex flex-1 items-center justify-center"
+         class="flex flex-1 items-center justify-center relative"
          [ngClass]="{'bg-gray-100': weekday.date.getMonth() % 2 !== 0, 'bg-green-300': checkedFormControl?.value ?? false, 'bg-blue-300': isCurrentDate(weekday.date) }">
+        <div *ngIf="weekday.monthDate === 1" class="absolute top-0 left-0 bottom-0">
+            <div class="-mt-1 -ml-4 -rotate-90 text-gray-400 text-xs origin-right w-6 text-center">{{dateMonthName(weekday.date) | uppercase}}</div>
+        </div>
         {{weekday.monthDate ?? '-'}}
     </div>
 </div>

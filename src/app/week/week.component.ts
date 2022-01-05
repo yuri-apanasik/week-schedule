@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
+  EventEmitter, HostListener,
   Input,
   OnChanges,
   Output,
@@ -35,6 +35,10 @@ export class WeekComponent implements OnChanges {
 
   isCurrentDate(date: Date): boolean {
     return date.getFullYear() === this.currentDate.getFullYear() && date.getMonth() === this.currentDate.getMonth() && date.getDate() === this.currentDate.getDate();
+  }
+
+  dateMonthName(date: Date): string {
+    return date.toLocaleString('en', { month: 'short' });
   }
 
   private init(): void {
