@@ -25,24 +25,16 @@ const getYearData = (request, response) => {
   });
 }
 
-const createYearData = (request, response) => {
-  const { year, data } = request.body;
-  pool.query('INSERT INTO years (year, data) VALUES ($1, $2)', [year, data], (error, result) => {
-    if (error) { throw error; }
-    response.status(201).send(`Data saved for year: ${result.insertId}`);
-  });
-}
-
 const saveYearData = (request, response) => {
   const { year, data } = request.body;
   pool.query('INSERT INTO years (year, data) VALUES ($1, $2)', [year, data], (error, result) => {
     if (error) {
       pool.query('UPDATE years SET data = $2 WHERE year = $1', [year, data], error => {
         if (error) { throw error; }
-        response.status(200).send(`Data saved for year: ${year}`);
+        response.status(200).send({ status: 200 });
       });
     } else {
-      response.status(201).send(`Data saved for year: ${year}`);
+      response.status(201).send({ status: 201 });
     }
   });
 }
@@ -51,5 +43,4 @@ module.exports = {
   getAllData,
   getYearData,
   saveYearData,
-  createYearData,
 };

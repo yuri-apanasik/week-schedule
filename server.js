@@ -14,7 +14,6 @@ app.use(express.static(path.join(__dirname, '/dist/week-schedule')));
 app.get('/api/years', db.getAllData);
 app.get('/api/years/:year', db.getYearData);
 app.post('/api/years', db.saveYearData);
-app.put('/api/years', db.createYearData);
 
 app.get('/*', (req, res) => {
   res.sendFile('/dist/week-schedule/index.html', { root: __dirname });
