@@ -1,7 +1,13 @@
-<div class="flex sticky top-0 bg-white p-3 z-10">
+<div class="flex sticky top-0 bg-white p-3 z-10 items-center">
+    <div class="rounded-full bg-gray-200 mr-4 w-8 h-8 flex items-center justify-center"
+         matRipple (click)="toggleCollapsed()">
+        <mat-icon *ngIf="(isLoading$ | async) === false" class="transition-transform" [ngClass]="{'rotate-90': !collapsed}">chevron_right</mat-icon>
+        <mat-icon *ngIf="(isLoading$ | async) === true" class="animate-spin">sync</mat-icon>
+    </div>
     <div class="flex-auto text-lg font-semibold">YEAR {{year}}</div>
     <div class="px-2 rounded-full bg-green-400 text-lg font-bold">{{weeksSelected}}</div>
 </div>
-<ng-container *ngFor="let weekControl of weeksFormArray.controls; let week=index">
-    <wsch-week [year]="year" [week]="week" [checkedFormControl]="$any(weekControl)"></wsch-week>
+<ng-container *ngIf="!collapsed">
+    <wsch-week *ngFor="let weekControl of weeksFormArray.controls; let week=index"
+               [year]="year" [week]="week" [checkedFormControl]="$any(weekControl)"></wsch-week>
 </ng-container>

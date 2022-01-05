@@ -7,5 +7,5 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'week-schedule';
-  year = 2022;
+  years = [2021, 2022];
 }

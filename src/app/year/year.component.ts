@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { FormArray, FormControl } from '@angular/forms';
-import { tap } from 'rxjs';
+import { BehaviorSubject, filter, finalize, Subject, switchMap, take, takeUntil, tap } from 'rxjs';
+import { DATA_PROVIDER, DataProvider } from '../data-provider/data-provider';
 
 const DEFAULT_YEAR = 2022;
 const WEEK_COUNT = 53;
-const STORAGE_KEY = '__WEEK_SCHEDULE_DATA__';
+const STORAGE_KEY = '__WEEK_SCHEDULE_YEAR_COLLAPSED__';
 
 @Component({
   selector: 'wsch-year',
@@ -12,23 +13,32 @@ const STORAGE_KEY = '__WEEK_SCHEDULE_DATA__';
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class YearComponent implements OnChanges {
+export class YearComponent implements OnChanges, OnDestroy {
   @Input() year: number = DEFAULT_YEAR;
 
   weeksFormArray = new FormArray([...Array(WEEK_COUNT)].map(() => new FormControl(false)));
   weeksSelected = 0;
 
-  constructor() {
+  collapsed = false;
+
+  private isLoadingSubject = new BehaviorSubject<boolean>(false);
+  isLoading$ = this.isLoadingSubject.asObservable();
+
+  private get collapsedStorageKey(): string { return `${STORAGE_KEY}${this.year}`; }
+
+  private readonly destroySubject = new Subject<void>();
+
+  constructor(
+    @Inject(DATA_PROVIDER) private readonly dataProvider: DataProvider,
+  ) {
     this.weeksFormArray.valueChanges.pipe(
-      tap((val: boolean[]) => {
-        this.weeksSelected = val?.filter((t: boolean) => t).length ?? 0;
-        this.saveData({
-          [this.year]: val?.reduce((res, curr, index) => {
-            if (curr) { res.push(index); }
-            return res;
-          }, [] as number[]),
-        })
-      }),
+      tap((val: boolean[]) => this.weeksSelected = val?.filter((t: boolean) => t).length ?? 0),
+      filter(() => !!this.dataProvider?.saveYearData),
+      switchMap(val => this.dataProvider.saveYearData(this.year, val?.reduce((res, curr, index) => {
+        if (curr) { res.push(index); }
+        return res;
+      }, [] as number[]))),
+      takeUntil(this.destroySubject),
     ).subscribe();
   }
 
@@ -36,23 +46,29 @@ export class YearComponent implements OnChanges {
     if (changes.year) { this.init(); }
   }
 
+  ngOnDestroy(): void {
+    this.destroySubject.next();
+    this.destroySubject.complete();
+  }
+
   private init(): void {
-    const currentData = this.loadData();
-    if (currentData[this.year]) {
-      this.weeksFormArray.patchValue([...Array(WEEK_COUNT)].map((_, index) => currentData[this.year].includes(index)), { emitEvent: false });
-    }
+    this.collapsed = localStorage.getItem(this.collapsedStorageKey) === 'true';
+
+    this.isLoadingSubject.next(true);
+    this.dataProvider?.loadYearData(this.year).pipe(
+      take(1),
+      filter(yearData => !!yearData),
+      tap(yearData => {
+        this.weeksSelected = yearData.length;
+        this.weeksFormArray.patchValue([...Array(WEEK_COUNT)].map((_, index) => yearData.includes(index)), { emitEvent: false });
+      }),
+      finalize(() => this.isLoadingSubject.next(false)),
+      takeUntil(this.destroySubject),
+    ).subscribe();
   }
 
-  private loadData(): Record<number, number[]> {
-    const currentDataStr = localStorage.getItem(STORAGE_KEY);
-    return currentDataStr?.length ? JSON.parse(currentDataStr) : {};
-  }
-
-  private saveData(patchObj: Record<number, number[]>): void {
-    const currentData = this.loadData();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      ...currentData,
-      ...patchObj,
-    }));
+  toggleCollapsed(): void {
+    this.collapsed = !this.collapsed;
+    localStorage.setItem(this.collapsedStorageKey, `${this.collapsed}`);
   }
 }
