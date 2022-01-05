@@ -9,6 +9,8 @@ import { HerokuDataProvider } from './data-provider/heroku.data-provider';
 import { HttpClientModule } from '@angular/common/http';
 import { LocalStorageDataProvider } from './data-provider/local-storage.data-provider';
 import { environment } from '../environments/environment';
+import { SCROLL_PROVIDER } from './scroll-provider';
+import { Subject } from 'rxjs';
 
 @NgModule({
   declarations: [
@@ -24,6 +26,10 @@ import { environment } from '../environments/environment';
     {
       provide: DATA_PROVIDER,
       useClass: environment.production ? HerokuDataProvider : LocalStorageDataProvider,
+    },
+    {
+      provide: SCROLL_PROVIDER,
+      useValue: new Subject<Date>(),
     },
   ],
   bootstrap: [AppComponent],

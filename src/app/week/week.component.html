@@ -3,7 +3,7 @@
 
     <div *ngFor="let weekday of weekdays"
          class="flex flex-1 items-center justify-center relative"
-         [ngClass]="{'bg-gray-100': weekday.date.getMonth() % 2 !== 0, 'bg-green-300': checkedFormControl?.value ?? false, 'bg-blue-300': isCurrentDate(weekday.date) }">
+         [ngClass]="{'bg-gray-100': weekday.date.getMonth() % 2 !== 0, 'bg-green-300': checkedFormControl?.value ?? false, 'bg-blue-300': dateEquals(weekday.date, currentDate) }">
         <div *ngIf="weekday.monthDate === 1" class="absolute top-0 left-0 bottom-0">
             <div class="-mt-1 -ml-4 -rotate-90 text-gray-400 text-xs origin-right w-6 text-center">{{dateMonthName(weekday.date) | uppercase}}</div>
         </div>

@@ -1,7 +1,17 @@
-import { ChangeDetectionStrategy, Component, Inject, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Inject,
+  Input,
+  OnChanges,
+  OnDestroy,
+  Optional,
+  SimpleChanges,
+} from '@angular/core';
 import { FormArray, FormControl } from '@angular/forms';
 import { BehaviorSubject, filter, finalize, Subject, switchMap, take, takeUntil, tap } from 'rxjs';
 import { DATA_PROVIDER, DataProvider } from '../data-provider/data-provider';
+import { SCROLL_PROVIDER } from '../scroll-provider';
 
 const DEFAULT_YEAR = 2022;
 const WEEK_COUNT = 53;
@@ -21,6 +31,10 @@ export class YearComponent implements OnChanges, OnDestroy {
 
   collapsed = false;
 
+  private readonly currentDate = new Date();
+
+  get isCurrentYear(): boolean { return this.currentDate.getFullYear() === this.year; }
+
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   isLoading$ = this.isLoadingSubject.asObservable();
 
@@ -30,6 +44,7 @@ export class YearComponent implements OnChanges, OnDestroy {
 
   constructor(
     @Inject(DATA_PROVIDER) private readonly dataProvider: DataProvider,
+    @Inject(SCROLL_PROVIDER) @Optional() private readonly scrollDateProvider: Subject<Date>,
   ) {
     this.weeksFormArray.valueChanges.pipe(
       tap((val: boolean[]) => this.weeksSelected = val?.filter((t: boolean) => t).length ?? 0),
@@ -70,5 +85,10 @@ export class YearComponent implements OnChanges, OnDestroy {
   toggleCollapsed(): void {
     this.collapsed = !this.collapsed;
     localStorage.setItem(this.collapsedStorageKey, `${this.collapsed}`);
+  }
+
+  scrollToCurrentDay(): void {
+    if (this.collapsed) { this.toggleCollapsed(); }
+    this.scrollDateProvider?.next(this.currentDate);
   }
 }

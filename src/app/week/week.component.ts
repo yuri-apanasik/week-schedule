@@ -1,14 +1,18 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter, HostListener,
+  ElementRef,
+  Inject,
   Input,
   OnChanges,
-  Output,
+  OnDestroy,
+  Optional,
   SimpleChanges,
 } from '@angular/core';
 import { addDays, firstWeekdayOfYear } from '../utils';
 import { FormControl } from '@angular/forms';
+import { SCROLL_PROVIDER } from '../scroll-provider';
+import { filter, Observable, Subject, takeUntil, tap } from 'rxjs';
 
 const DEFAULT_YEAR = 2022;
 const DEFAULT_WEEK = 1;
@@ -20,21 +24,43 @@ const WEEK_LENGTH = 7;
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WeekComponent implements OnChanges {
+export class WeekComponent implements OnChanges, OnDestroy {
   @Input() year: number = DEFAULT_YEAR;
   @Input() week: number = DEFAULT_WEEK;
   @Input() checkedFormControl: FormControl | undefined;
 
   weekdays: { date: Date, monthDate: (number | null) }[] = [];
 
-  private readonly currentDate = new Date();
+  readonly currentDate = new Date();
+
+  private readonly destroySubject = new Subject<void>();
+
+  constructor(
+    @Inject(SCROLL_PROVIDER) @Optional() scrollDateProvider: Observable<Date>,
+    hostElement: ElementRef,
+  ) {
+    scrollDateProvider?.pipe(
+      filter(date => this.weekdays.some(t => this.dateEquals(t.date, date))),
+      tap(date => {
+        console.log(date);
+        hostElement.nativeElement.scrollIntoView();
+        // setTimeout(() => window.scrollBy(0, SCROLL_SHIFT));
+      }),
+      takeUntil(this.destroySubject),
+    ).subscribe();
+  }
 
   ngOnChanges(changes: SimpleChanges & SmartChanges<this>): void {
     if (changes.year || changes.week) { this.init(); }
   }
 
-  isCurrentDate(date: Date): boolean {
-    return date.getFullYear() === this.currentDate.getFullYear() && date.getMonth() === this.currentDate.getMonth() && date.getDate() === this.currentDate.getDate();
+  ngOnDestroy(): void {
+    this.destroySubject.next();
+    this.destroySubject.complete();
+  }
+
+  dateEquals(dateA: Date, dateB: Date | undefined): boolean {
+    return dateA.getFullYear() === dateB?.getFullYear() && dateA.getMonth() === dateB?.getMonth() && dateA.getDate() === dateB?.getDate();
   }
 
   dateMonthName(date: Date): string {

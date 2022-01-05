@@ -4,10 +4,16 @@
         <mat-icon *ngIf="(isLoading$ | async) === false" class="transition-transform" [ngClass]="{'rotate-90': !collapsed}">chevron_right</mat-icon>
         <mat-icon *ngIf="(isLoading$ | async) === true" class="animate-spin">sync</mat-icon>
     </div>
-    <div class="flex-auto text-lg font-semibold">YEAR {{year}}</div>
+    <div class="flex gap-2 flex-auto text-lg font-semibold">
+        YEAR {{year}}
+        <div *ngIf="isCurrentYear"
+             class="inline-block px-2 rounded-full bg-blue-300 text-base font-light flex items-center"
+             matRipple (click)="scrollToCurrentDay()">Current day</div>
+    </div>
     <div class="px-2 rounded-full bg-green-400 text-lg font-bold">{{weeksSelected}}</div>
 </div>
 <ng-container *ngIf="!collapsed">
     <wsch-week *ngFor="let weekControl of weeksFormArray.controls; let week=index"
+               class="scroll-my-28"
                [year]="year" [week]="week" [checkedFormControl]="$any(weekControl)"></wsch-week>
 </ng-container>
