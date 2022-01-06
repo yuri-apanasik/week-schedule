@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule, HammerModule } from '@angular/platform-browser';
+import { BrowserModule, HAMMER_GESTURE_CONFIG, HammerGestureConfig, HammerModule } from '@angular/platform-browser';
 
 import 'hammerjs';
 
@@ -14,6 +14,14 @@ import { environment } from '../environments/environment';
 import { SCROLL_PROVIDER } from './scroll-provider';
 import { Subject } from 'rxjs';
 import { MatDialogModule } from '@angular/material/dialog';
+
+export class MyHammerConfig extends HammerGestureConfig  {
+  override overrides = {
+    'swipe': { direction: Hammer.DIRECTION_HORIZONTAL },
+    'pinch': { enable: false },
+    'rotate': { enable: false },
+  };
+}
 
 @NgModule({
   declarations: [
@@ -35,6 +43,10 @@ import { MatDialogModule } from '@angular/material/dialog';
     {
       provide: SCROLL_PROVIDER,
       useValue: new Subject<Date>(),
+    },
+    {
+      provide: HAMMER_GESTURE_CONFIG,
+      useClass: MyHammerConfig,
     },
   ],
   bootstrap: [AppComponent],
