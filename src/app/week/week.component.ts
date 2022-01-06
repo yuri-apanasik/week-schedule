@@ -1,5 +1,5 @@
 import {
-  ChangeDetectionStrategy,
+  ChangeDetectionStrategy, ChangeDetectorRef,
   Component,
   ElementRef,
   Inject,
@@ -10,9 +10,12 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { addDays, firstWeekdayOfYear } from '../utils';
-import { FormControl } from '@angular/forms';
+import { FormGroup } from '@angular/forms';
 import { SCROLL_PROVIDER } from '../scroll-provider';
-import { filter, Observable, Subject, takeUntil, tap } from 'rxjs';
+import { filter, Observable, Subject, Subscription, takeUntil, tap } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { WeekCommentDialogComponent } from './week-comment-dialog/week-comment-dialog.component';
+import { weekStateClass, weekStatePipeline } from '../data-provider/week-state';
 
 const DEFAULT_YEAR = 2022;
 const DEFAULT_WEEK = 1;
@@ -27,36 +30,47 @@ const WEEK_LENGTH = 7;
 export class WeekComponent implements OnChanges, OnDestroy {
   @Input() year: number = DEFAULT_YEAR;
   @Input() week: number = DEFAULT_WEEK;
-  @Input() checkedFormControl: FormControl | undefined;
+  @Input() formGroup: FormGroup | undefined;
 
   weekdays: { date: Date, monthDate: (number | null) }[] = [];
+  statePipeline = weekStatePipeline();
 
   readonly currentDate = new Date();
 
+  private formGroupSubscription: Subscription | undefined;
   private readonly destroySubject = new Subject<void>();
 
   constructor(
     @Inject(SCROLL_PROVIDER) @Optional() scrollDateProvider: Observable<Date>,
     hostElement: ElementRef,
+    private readonly dialog: MatDialog,
+    private readonly changeDetector: ChangeDetectorRef,
   ) {
     scrollDateProvider?.pipe(
       filter(date => this.weekdays.some(t => this.dateEquals(t.date, date))),
-      tap(date => {
-        console.log(date);
-        hostElement.nativeElement.scrollIntoView();
-        // setTimeout(() => window.scrollBy(0, SCROLL_SHIFT));
-      }),
+      tap(date => hostElement.nativeElement.scrollIntoView()),
       takeUntil(this.destroySubject),
     ).subscribe();
   }
 
   ngOnChanges(changes: SimpleChanges & SmartChanges<this>): void {
     if (changes.year || changes.week) { this.init(); }
+    if (changes.formGroup) {
+      this.formGroupSubscription?.unsubscribe();
+      this.formGroupSubscription = this.formGroup?.valueChanges.pipe(
+        tap(() => this.changeDetector.markForCheck()),
+      ).subscribe();
+    }
   }
 
   ngOnDestroy(): void {
+    this.formGroupSubscription?.unsubscribe();
     this.destroySubject.next();
     this.destroySubject.complete();
+  }
+
+  stateClass(state: number): string {
+    return weekStateClass(state);
   }
 
   dateEquals(dateA: Date, dateB: Date | undefined): boolean {
@@ -75,5 +89,20 @@ export class WeekComponent implements OnChanges, OnDestroy {
         date,
         monthDate: date.getFullYear() === this.year ? date.getDate() : null,
       }));
+  }
+
+  onStateClick(): void {
+    const stateIndex = this.statePipeline.indexOf(this.formGroup?.get('state')?.value ?? 0);
+    this.formGroup?.get('state')?.setValue(this.statePipeline[(stateIndex + 1) % this.statePipeline.length]);
+  }
+
+  onStateLongPress(): void {
+    const dialogRef = this.dialog.open(WeekCommentDialogComponent, {
+      data: this.formGroup?.get('comment')?.value ?? '',
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      this.formGroup?.get('comment')?.setValue(result);
+      this.changeDetector.markForCheck();
+    });
   }
 }

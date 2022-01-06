@@ -8,10 +8,11 @@ import {
   Optional,
   SimpleChanges,
 } from '@angular/core';
-import { FormArray, FormControl } from '@angular/forms';
+import { FormArray, FormControl, FormGroup } from '@angular/forms';
 import { BehaviorSubject, filter, finalize, Subject, switchMap, take, takeUntil, tap } from 'rxjs';
-import { DATA_PROVIDER, DataProvider } from '../data-provider/data-provider';
+import { DATA_PROVIDER, DataProvider, WeekData, YearData } from '../data-provider/data-provider';
 import { SCROLL_PROVIDER } from '../scroll-provider';
+import { weekStateClass, weekStatePipeline } from '../data-provider/week-state';
 
 const DEFAULT_YEAR = 2022;
 const WEEK_COUNT = 53;
@@ -26,8 +27,15 @@ const STORAGE_KEY = '__WEEK_SCHEDULE_YEAR_COLLAPSED__';
 export class YearComponent implements OnChanges, OnDestroy {
   @Input() year: number = DEFAULT_YEAR;
 
-  weeksFormArray = new FormArray([...Array(WEEK_COUNT)].map(() => new FormControl(false)));
-  weeksSelected = 0;
+  weeksFormArray = new FormArray([...Array(WEEK_COUNT)].map(() => new FormGroup({
+    state: new FormControl(0),
+    comment: new FormControl(''),
+  })));
+
+  weeksSelected = weekStatePipeline().filter(t => !!t).map(state => ({
+    state,
+    count: 0,
+  }));
 
   collapsed = false;
 
@@ -47,12 +55,12 @@ export class YearComponent implements OnChanges, OnDestroy {
     @Inject(SCROLL_PROVIDER) @Optional() private readonly scrollDateProvider: Subject<Date>,
   ) {
     this.weeksFormArray.valueChanges.pipe(
-      tap((val: boolean[]) => this.weeksSelected = val?.filter((t: boolean) => t).length ?? 0),
-      filter(() => !!this.dataProvider?.saveYearData),
+      tap((val: WeekData[]) => this.weeksSelected.forEach(data => data.count = val.filter(t => t.state === data.state).length)),
+      filter(() => !!this.dataProvider?.saveYearData && !this.isLoadingSubject.value),
       switchMap(val => this.dataProvider.saveYearData(this.year, val?.reduce((res, curr, index) => {
-        if (curr) { res.push(index); }
+        if (curr.state || curr.comment) { res[index] = curr; }
         return res;
-      }, [] as number[]))),
+      }, {} as YearData))),
       takeUntil(this.destroySubject),
     ).subscribe();
   }
@@ -74,12 +82,16 @@ export class YearComponent implements OnChanges, OnDestroy {
       take(1),
       filter(yearData => !!yearData),
       tap(yearData => {
-        this.weeksSelected = yearData.length;
-        this.weeksFormArray.patchValue([...Array(WEEK_COUNT)].map((_, index) => yearData.includes(index)), { emitEvent: false });
+        this.weeksSelected.forEach(data => data.count = Object.values(yearData).filter((t: WeekData) => t.state === data.state).length)
+        this.weeksFormArray.patchValue([...Array(WEEK_COUNT)].map((_, index) => yearData[index] ?? {}));
       }),
       finalize(() => this.isLoadingSubject.next(false)),
       takeUntil(this.destroySubject),
     ).subscribe();
+  }
+
+  stateClass(state: number): string {
+    return weekStateClass(state);
   }
 
   toggleCollapsed(): void {

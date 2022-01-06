@@ -1,12 +1,22 @@
-<div class="flex flex-nowrap">
-    <mat-checkbox *ngIf="checkedFormControl" class="flex-none py-3 px-5" [formControl]="checkedFormControl"></mat-checkbox>
+<div class="flex flex-nowrap relative">
+    <div class="flex-none py-3 px-4">
+        <div class="rounded-full w-5 h-5"
+             [ngClass]="formGroup?.get('state')?.value ? stateClass(formGroup?.get('state')?.value ?? 0) : 'bg-gray-300'"
+             (click)="onStateClick()"
+             (wschLongPress)="onStateLongPress()">&nbsp;</div>
+    </div>
 
     <div *ngFor="let weekday of weekdays"
          class="flex flex-1 items-center justify-center relative"
-         [ngClass]="{'bg-gray-100': weekday.date.getMonth() % 2 !== 0, 'bg-green-300': checkedFormControl?.value ?? false, 'bg-blue-300': dateEquals(weekday.date, currentDate) }">
+         [ngClass]="dateEquals(weekday.date, currentDate) ? 'bg-blue-300' : (formGroup?.get('state')?.value ? stateClass(formGroup?.get('state')?.value) : (weekday.date.getMonth() % 2 !== 0 ? 'bg-gray-100' : ''))">
         <div *ngIf="weekday.monthDate === 1" class="absolute top-0 left-0 bottom-0">
             <div class="-mt-1 -ml-4 -rotate-90 text-gray-400 text-xs origin-right w-6 text-center">{{dateMonthName(weekday.date) | uppercase}}</div>
         </div>
         {{weekday.monthDate ?? '-'}}
+    </div>
+
+    <div *ngIf="formGroup?.get('comment')?.value"
+         class="absolute bottom-px left-14 text-gray-800 text-xs">
+        {{formGroup?.get('comment')?.value}}
     </div>
 </div>

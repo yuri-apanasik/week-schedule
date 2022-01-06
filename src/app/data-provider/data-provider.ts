@@ -1,7 +1,14 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 
-export type YearData = number[];
+export interface WeekData {
+  state: number;
+  comment: string;
+}
+
+export interface YearData {
+  [week: number]: WeekData;
+}
 
 export interface AppData {
   [year: number]: YearData;

@@ -11,6 +11,7 @@ import { LocalStorageDataProvider } from './data-provider/local-storage.data-pro
 import { environment } from '../environments/environment';
 import { SCROLL_PROVIDER } from './scroll-provider';
 import { Subject } from 'rxjs';
+import { MatDialogModule } from '@angular/material/dialog';
 
 @NgModule({
   declarations: [
@@ -20,6 +21,7 @@ import { Subject } from 'rxjs';
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
+    MatDialogModule,
     YearModule,
   ],
   providers: [

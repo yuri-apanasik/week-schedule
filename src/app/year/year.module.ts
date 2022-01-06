@@ -7,7 +7,7 @@ import { MatRippleModule } from '@angular/material/core';
 
 @NgModule({
   declarations: [
-    YearComponent
+    YearComponent,
   ],
   imports: [
     CommonModule,
