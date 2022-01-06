@@ -16,6 +16,7 @@ import { filter, Observable, Subject, Subscription, takeUntil, tap } from 'rxjs'
 import { MatDialog } from '@angular/material/dialog';
 import { WeekCommentDialogComponent } from './week-comment-dialog/week-comment-dialog.component';
 import { weekStateClass, weekStatePipeline } from '../data-provider/week-state';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 
 const DEFAULT_YEAR = 2022;
 const DEFAULT_WEEK = 1;
@@ -26,6 +27,14 @@ const WEEK_LENGTH = 7;
   templateUrl: './week.component.html',
   styles: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [
+    trigger('fullWidth', [
+      state('yes', style({ width: '*' })),
+      state('no', style({ width: '0px' })),
+      transition('no <=> yes', animate(500)),
+      transition('yes <=> no', animate(500)),
+    ]),
+  ],
 })
 export class WeekComponent implements OnChanges, OnDestroy {
   @Input() year: number = DEFAULT_YEAR;
@@ -34,6 +43,7 @@ export class WeekComponent implements OnChanges, OnDestroy {
 
   weekdays: { date: Date, monthDate: (number | null) }[] = [];
   statePipeline = weekStatePipeline();
+  optionsVisible = false;
 
   readonly currentDate = new Date();
 
@@ -96,7 +106,8 @@ export class WeekComponent implements OnChanges, OnDestroy {
     this.formGroup?.get('state')?.setValue(this.statePipeline[(stateIndex + 1) % this.statePipeline.length]);
   }
 
-  onStateLongPress(): void {
+  showCommentDialog(): void {
+    this.hideOptions();
     const dialogRef = this.dialog.open(WeekCommentDialogComponent, {
       data: this.formGroup?.get('comment')?.value ?? '',
     });
@@ -104,5 +115,13 @@ export class WeekComponent implements OnChanges, OnDestroy {
       this.formGroup?.get('comment')?.setValue(result);
       this.changeDetector.markForCheck();
     });
+  }
+
+  showOptions(): void {
+    this.optionsVisible = true;
+  }
+
+  hideOptions(): void {
+    this.optionsVisible = false;
   }
 }
